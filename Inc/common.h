@@ -25,6 +25,7 @@ extern uint32_t current_GPIO_PIN;
 extern char ic_timer_prescaler;
 extern uint8_t buffersize;
 extern char output_timer_prescaler;
+extern uint16_t telemetry_auto_arr;
 extern uint8_t compute_dshot_flag;
 extern uint16_t battery_voltage;
 extern int16_t actual_current;

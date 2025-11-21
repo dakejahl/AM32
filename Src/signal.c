@@ -25,8 +25,10 @@ uint8_t low_calibration_counts = 0;
 uint16_t last_input = 0;
 char output_timer_prescaler;
 // Default telemetry ARR for nominal DShot600->750kHz: ~1.333us per bit
-// This is dynamically updated when DShot frames are received
-uint16_t telemetry_auto_arr = (CPU_FREQUENCY_MHZ * 4) / 3 - 3;
+// Must be < DSHOT_GCR_HIGH_VALUE (64 or 128) to avoid CCR==ARR edge case glitches
+// Using DSHOT_GCR_HIGH_VALUE - 1 provides minimal safe margin
+// Adaptive timing will calibrate to actual measured DShot rate within milliseconds
+uint16_t telemetry_auto_arr = DSHOT_GCR_HIGH_VALUE - 1;
 uint8_t buffersize = 32;
 uint32_t average_signal_pulse;
 uint8_t average_count;

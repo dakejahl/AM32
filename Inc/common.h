@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "eeprom.h"
+#include "targets.h"
 
 #pragma once
 
@@ -27,6 +28,17 @@ extern uint8_t buffersize;
 extern char output_timer_prescaler;
 extern uint16_t telemetry_auto_arr;
 extern uint8_t compute_dshot_flag;
+
+// BDShot telemetry GCR encoding uses fixed CCR values that must be > ARR
+// F051/F031/V203 use bit-shift of 6 (value 64), others use 7 (value 128)
+// This determines the maximum safe ARR value to avoid CCR==ARR edge case
+#if defined(MCU_F051) || defined(MCU_F031) || defined(MCU_CH32V203)
+    #define DSHOT_GCR_HIGH_VALUE 64
+    #define DSHOT_GCR_SHIFT 6  // log2(64) = 6
+#else
+    #define DSHOT_GCR_HIGH_VALUE 128
+    #define DSHOT_GCR_SHIFT 7  // log2(128) = 7
+#endif
 extern uint16_t battery_voltage;
 extern int16_t actual_current;
 extern uint16_t e_rpm;

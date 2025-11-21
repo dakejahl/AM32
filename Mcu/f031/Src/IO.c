@@ -56,7 +56,7 @@ void changeToOutput()
     IC_TIMER_REGISTER->CCER = 0x3;
 #endif
     IC_TIMER_REGISTER->PSC = output_timer_prescaler;
-    IC_TIMER_REGISTER->ARR = 61;
+    IC_TIMER_REGISTER->ARR = telemetry_auto_arr;
     out_put = 1;
     LL_TIM_GenerateEvent_UPDATE(IC_TIMER_REGISTER);
 }

@@ -25,7 +25,7 @@ void changeToOutput()
     IC_TIMER_REGISTER->cm1 = 0x60; // oc mode pwm
     IC_TIMER_REGISTER->cctrl = 0x3; //
     IC_TIMER_REGISTER->div = output_timer_prescaler;
-    IC_TIMER_REGISTER->pr = 76; // 76 to start
+    IC_TIMER_REGISTER->pr = telemetry_auto_arr;
 
     out_put = 1;
     IC_TIMER_REGISTER->swevt_bit.ovfswtr = TRUE;

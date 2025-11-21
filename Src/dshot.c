@@ -75,6 +75,31 @@ void computeDshotDMA()
     halfpulsetime = dshot_frametime >> 5;
     if ((dshot_frametime > dshot_frametime_low) && (dshot_frametime < dshot_frametime_high)) {
 			signaltimeout = 0;
+        // Adaptive telemetry timing: measure incoming DShot and calibrate outgoing telemetry
+        uint32_t divisor = 20 * (output_timer_prescaler + 1);
+        uint16_t new_arr = (dshot_frametime * (ic_timer_prescaler + 1) + (divisor / 2)) / divisor;
+
+        // Safety check: Avoid ARR values that equal GCR compare values (64 or 128)
+        // to prevent CCR==ARR edge case which causes glitches
+        #if defined(MCU_F051) || defined(MCU_F031) || defined(MCU_CH32V203)
+            // GCR high value is 64, ensure ARR < 64
+            if (new_arr >= 64) {
+                new_arr = 63;
+            }
+        #else
+            // GCR high value is 128, ensure ARR < 128
+            if (new_arr >= 128) {
+                new_arr = 127;
+            }
+        #endif
+
+        if (new_arr != telemetry_auto_arr) {
+            uint16_t diff = (new_arr > telemetry_auto_arr) ? (new_arr - telemetry_auto_arr) : (telemetry_auto_arr - new_arr);
+            if (diff > 1) {
+                telemetry_auto_arr = new_arr;
+            }
+        }
+
         for (int i = 0; i < 16; i++) {
             // note that dma_buffer[] is uint32_t, we cast the difference to uint16_t to handle
             // timer wrap correctly

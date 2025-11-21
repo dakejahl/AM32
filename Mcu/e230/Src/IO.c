@@ -50,7 +50,7 @@ void sendDshotDma()
     TIMER_CHCTL0(IC_TIMER_REGISTER) = 0x60;
     TIMER_CHCTL2(IC_TIMER_REGISTER) = 0x3;
     TIMER_PSC(IC_TIMER_REGISTER) = output_timer_prescaler;
-    TIMER_CAR(IC_TIMER_REGISTER) = 100;
+    TIMER_CAR(IC_TIMER_REGISTER) = telemetry_auto_arr;
     out_put = 1;
     TIMER_SWEVG(IC_TIMER_REGISTER) |= (uint32_t)TIMER_EVENT_SRC_UPG;
     DMA_CHMADDR(INPUT_DMA_CHANNEL) = (uint32_t)&gcr;

@@ -32,7 +32,7 @@ void changeToOutput()
     IC_TIMER_REGISTER->cctrl = 0x300; //
 #endif
     IC_TIMER_REGISTER->div = output_timer_prescaler;
-    IC_TIMER_REGISTER->pr = 95;
+    IC_TIMER_REGISTER->pr = telemetry_auto_arr;
     out_put = 1;
     IC_TIMER_REGISTER->swevt_bit.ovfswtr = TRUE;
 }

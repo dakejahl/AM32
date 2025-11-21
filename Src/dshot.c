@@ -76,22 +76,9 @@ void computeDshotDMA()
     if ((dshot_frametime > dshot_frametime_low) && (dshot_frametime < dshot_frametime_high)) {
 			signaltimeout = 0;
         // Adaptive telemetry timing: measure incoming DShot and calibrate outgoing telemetry
+        // GCR encoding now uses dynamic scaling (ARR+margin), so ARR can vary freely
         uint32_t divisor = 20 * (output_timer_prescaler + 1);
         uint16_t new_arr = (dshot_frametime * (ic_timer_prescaler + 1) + (divisor / 2)) / divisor;
-
-        // Safety check: Avoid ARR values that equal GCR compare values (64 or 128)
-        // to prevent CCR==ARR edge case which causes glitches
-        #if defined(MCU_F051) || defined(MCU_F031) || defined(MCU_CH32V203)
-            // GCR high value is 64, ensure ARR < 64
-            if (new_arr >= 64) {
-                new_arr = 63;
-            }
-        #else
-            // GCR high value is 128, ensure ARR < 128
-            if (new_arr >= 128) {
-                new_arr = 127;
-            }
-        #endif
 
         if (new_arr != telemetry_auto_arr) {
             uint16_t diff = (new_arr > telemetry_auto_arr) ? (new_arr - telemetry_auto_arr) : (telemetry_auto_arr - new_arr);
@@ -346,21 +333,31 @@ void make_dshot_package(uint16_t com_time)
         | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 4))]
             << 5 // 3rd set of four digits
         | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 0))]; // last four digits
-// GCR RLL encode 20 to 21bit output
+// GCR RLL encode 20 to 21bit output with dynamic scaling
+// CCR values are set to ensure CCR > ARR (avoids edge case where CCR==ARR causes glitches)
 #if defined(MCU_F051) || defined(MCU_F031) || defined(MCU_CH32V203)
-    gcr[1 + buffer_padding] = 64;
-    for (int i = 19; i >= 0; i--) { // each digit in gcrnumber
-        gcr[buffer_padding + 20 - i + 1] = ((((gcrnumber & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 6))
-            << 6; // exclusive ored with number before it multiplied by 64 to match
-                  // output timer.
+    // Use ARR+3 as high value to guarantee CCR > ARR with margin
+    uint16_t gcr_high = telemetry_auto_arr + 3;
+
+    gcr[1 + buffer_padding] = gcr_high;
+    for (int i = 19; i >= 0; i--) {
+        // Extract previous bit (high if > 50% of gcr_high)
+        uint16_t prev_bit = (gcr[buffer_padding + 20 - i] > (gcr_high / 2)) ? 1 : 0;
+        // Extract current bit from gcrnumber
+        uint16_t curr_bit = (gcrnumber >> i) & 1;
+        // XOR and scale to gcr_high or 0
+        gcr[buffer_padding + 20 - i + 1] = (curr_bit ^ prev_bit) * gcr_high;
     }
     gcr[buffer_padding] = 0;
 #else
-    gcr[1 + buffer_padding] = 128;
-    for (int i = 19; i >= 0; i--) { // each digit in gcrnumber
-        gcr[buffer_padding + 20 - i + 1] = ((((gcrnumber & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 7))
-            << 7; // exclusive ored with number before it multiplied by 64 to match
-                  // output timer.
+    // Higher performance MCUs use larger margin
+    uint16_t gcr_high = telemetry_auto_arr + 6;
+
+    gcr[1 + buffer_padding] = gcr_high;
+    for (int i = 19; i >= 0; i--) {
+        uint16_t prev_bit = (gcr[buffer_padding + 20 - i] > (gcr_high / 2)) ? 1 : 0;
+        uint16_t curr_bit = (gcrnumber >> i) & 1;
+        gcr[buffer_padding + 20 - i + 1] = (curr_bit ^ prev_bit) * gcr_high;
     }
     gcr[buffer_padding] = 0;
 #endif

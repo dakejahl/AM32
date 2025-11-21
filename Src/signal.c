@@ -26,7 +26,8 @@ uint16_t last_input = 0;
 char output_timer_prescaler;
 // Default telemetry ARR for nominal DShot600->750kHz: ~1.333us per bit
 // This is dynamically updated when DShot frames are received
-uint16_t telemetry_auto_arr = (CPU_FREQUENCY_MHZ * 4) / 3 - 3;
+// GCR encoding now uses dynamic scaling, so ARR can take any value
+uint16_t telemetry_auto_arr = (CPU_FREQUENCY_MHZ * 4) / 3;
 uint8_t buffersize = 32;
 uint32_t average_signal_pulse;
 uint8_t average_count;
